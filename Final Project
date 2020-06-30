@@ -1,0 +1,63 @@
+import tensorflow as tf
+import numpy as np
+import matplotlib.pyplot as plt
+import cv2
+mnist = tf.keras.datasets.mnist
+(x_train,y_train),(x_test,y_test) = mnist.load_data()
+plt.imshow(x_train[2],cmap = 'gray')
+plt.show()
+# Normalization 0to 1
+x_train = x_train/255
+x_test = x_test/255
+model = tf.keras.models.Sequential()
+model.add(tf.keras.layers.Flatten(input_shape = x_train.shape[1:]))
+model.add(tf.keras.layers.Dense(128,activation='relu'))
+model.add(tf.keras.layers.Dense(128,activation='relu'))
+model.add(tf.keras.layers.Dense(10,activation='softmax'))
+model.compile(optimizer = 'adam',loss = 'sparse_categorical_crossentropy',
+             metrics = ['accuracy'])
+model.fit(x_train,y_train,epochs = 5)
+#epoch value depends upon the amount of data 
+y_pred = model.predict_classes(x_test)
+from sklearn.metrics import confusion_matrix,accuracy_score
+confusion_matrix(y_pred,y_test)
+
+image = x_test[0]
+i = cv2.resize(image,(28,28)).reshape(1,28,28)
+
+model.predict_classes(i)
+model.save('digit_project.h5')
+m_new = tf.keras.models.load_model('digit_project.h5')
+
+m_new.predict_classes(i)
+
+img = np.ones((600,600),dtype='uint8')*255
+img[100:500,100:500] = 0
+windowName = 'Digits Identification'
+cv2.namedWindow(windowName)
+
+state = False 
+def draw_type(event,x,y,a,b):
+        global state
+        if event == cv2.EVENT_LBUTTONDOWN:
+            state = True
+            cv2.circle(img,(x,y),10,(255,255,255),-1)
+        elif event == cv2.EVENT_MOUSEMOVE:
+            if state == True:
+                cv2.circle(img,(x,y),10,(255,255,255),-1)
+        else:
+            state = False 
+cv2.setMouseCallback(windowName,draw_type)
+
+while True:
+    cv2.imshow(windowName,img)
+    key = cv2.waitKey(1) 
+    if key == 27: 
+        break
+    elif key == 8:
+        img[100:500,100:500] = 0
+    elif key == 32:
+        final_image = img[100:500,100:500]
+        i = cv2.resize(final_image,(28,28)).reshape(1,28,28)
+        print(m_new.predict_classes(i))
+cv2.destroyAllWindows()
